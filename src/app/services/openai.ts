@@ -22,7 +22,7 @@ export async function getChatCompletion(messages: any): Promise<string> {
 
 export async function getReformulation(text: string): Promise<string> {
   try {
-    const systemPrompt = "Du er en ekspert på norsk språk og grammatikk. Din oppgave er å reformulere teksten som blir gitt på en måte som gjør den mer presis og grammatisk korrekt, samtidig som du bevarer den opprinnelige betydningen. Gjør kun nødvendige endringer.";
+    const systemPrompt = "Du er en ekspert på norsk språk og grammatikk. Din oppgave er å reformulere teksten som blir gitt på en måte som gjør den mer presis og grammatisk korrekt, samtidig som du bevarer den opprinnelige betydningen. Gjør kun nødvendige endringer, og formuler deg formelt og presist, som en juridisk ekspertassistent.";
     
     const completion = await openai.chat.completions.create({
       messages: [
