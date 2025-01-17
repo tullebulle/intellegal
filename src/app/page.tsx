@@ -8,12 +8,14 @@ import Navbar from './components/Navbar';
 import InputModal from './components/InputModal';
 import SelectedTextBox from './components/SelectedTextBox';
 import { getReformulation } from './services/openai';
+import { RelevantResource } from './components/ResourceList';
 
 export default function Home() {
   const [selectedText, setSelectedText] = useState<string>('');
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
   const [isReformulating, setIsReformulating] = useState(false);
   const editorRef = useRef<TextEditorHandle>(null);
+  const [selectedLegalResources, setSelectedLegalResources] = useState<RelevantResource[]>([]);
 
   const handleReformulate = async () => {
     if (!selectedText) return;
@@ -58,13 +60,17 @@ export default function Home() {
               <ResourceList 
                 resources={mockLegalResources} 
                 selectedText={selectedText}
+                onSelectedResourcesChange={setSelectedLegalResources}
               />
             </div>
           </div>
           <div style={styles.bottomRightPane}>
             <div style={styles.paneContent}>
               <div style={styles.paneHeader}>Chat med AI</div>
-                  <Chat selectedText={selectedText} />
+                  <Chat 
+                    selectedText={selectedText}
+                    selectedResources={selectedLegalResources}
+                  />
             </div>
           </div>
         </div>

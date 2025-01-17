@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from '../types';
 import { getChatCompletion } from '../services/openai';
 import { CHAT_PROMPT } from '../config/prompts';
+import { RelevantResource } from './ResourceList';
 
 interface ChatProps {
   selectedText?: string;
+  selectedResources: RelevantResource[];
 }
 
-export default function Chat({ selectedText }: ChatProps) {
+export default function Chat({ selectedText, selectedResources }: ChatProps) {
   const [inputMessage, setInputMessage] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +36,14 @@ export default function Chat({ selectedText }: ChatProps) {
   //   }
   // }, [selectedText]);
 
+  useEffect(() => {
+    const resourcesString = selectedResources
+      .map(r => `${r.law_name} § ${r.chapter}-${r.paragraph}: ${r.content}`)
+      .join('\n\n');
+    
+    console.log('Selected Resources String:', resourcesString);
+  }, [selectedResources]);
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -48,10 +58,14 @@ export default function Chat({ selectedText }: ChatProps) {
     setIsLoading(true);
 
     try {
-      // Include system prompt and selected text in the context
+      const resourcesString = selectedResources
+        .map(r => `${r.law_name} § ${r.chapter}-${r.paragraph}: ${r.content}`)
+        .join('\n\n');
+
       const messages = [
         { role: 'system', content: CHAT_PROMPT },
         ...(selectedText ? [{ role: 'system', content: `Markert tekst: "${selectedText}"` }] : []),
+        ...(selectedResources.length > 0 ? [{ role: 'system', content: `Relevante rettskilder:\n${resourcesString}` }] : []),
         ...chatHistory.map(msg => ({ role: msg.role, content: msg.content })),
         { role: 'user', content: inputMessage }
       ];
@@ -83,7 +97,7 @@ export default function Chat({ selectedText }: ChatProps) {
           <p style={styles.chatPlaceholder}>
           {selectedText 
             ? `Selected text: "${selectedText}"`
-            : "Need help? Chat with our AI, that can answer any of your questions, or review your document."}
+            : "Trenger du hjelp? Chat med vår AI, som kan svare på alle dine spørsmål, eller gjennomgå dokumentet ditt."}
         </p>
         ) : (
           chatHistory.map(message => (
@@ -101,6 +115,16 @@ export default function Chat({ selectedText }: ChatProps) {
         {isLoading && <div style={styles.loading}>AI is thinking...</div>}
       </div>
       <div style={styles.chatInputContainer}>
+        {(selectedText || selectedResources.length > 0) && (
+          <div style={styles.contextIndicator}>
+            <strong>Kontekst: </strong>
+            {selectedText && ' Markert tekst'}
+            {selectedText && selectedResources.length > 0 && ', '}
+            {selectedResources.length > 0 && selectedResources.map(r => 
+              `${r.law_abbreviation} ${r.chapter}-${r.paragraph}`
+            ).join(', ')}
+          </div>
+        )}
         <input
           type="text"
           style={styles.chatInput}
@@ -112,7 +136,7 @@ export default function Chat({ selectedText }: ChatProps) {
               handleSendMessage();
             }
           }}
-          placeholder="Type your message..."
+          placeholder="Skriv inn spørsmål..."
           disabled={isLoading}
         />
         <button 
@@ -200,5 +224,22 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '14px',
+  },
+  contextIndicator: {
+    fontSize: '12px',
+    color: '#666',
+    padding: '4px 10px',
+    backgroundColor: '#f5f5f5',
+    borderRadius: '4px',
+    marginBottom: '5px',
+    maxWidth: '200px',
+    height: '2.8em',
+    overflow: 'hidden',
+    overflowY: 'hidden',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    lineHeight: '1.2',
+    whiteSpace: 'normal',
   },
 }; 

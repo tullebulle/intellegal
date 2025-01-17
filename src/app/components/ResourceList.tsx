@@ -7,34 +7,29 @@ import { RESOURCE_ANALYSIS_PROMPT } from '../config/prompts';
 interface ResourceListProps {
   resources: LegalResource[];
   selectedText?: string;
+  onSelectedResourcesChange: (resources: RelevantResource[]) => void;
 }
 
-interface RelevantResource extends LegalResource {
+export interface RelevantResource extends LegalResource {
   reason?: string;
+  isSelected?: boolean;
 }
 
-export default function ResourceList({ resources, selectedText }: ResourceListProps) {
+export default function ResourceList({ resources, selectedText, onSelectedResourcesChange }: ResourceListProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [relevantResources, setRelevantResources] = useState<RelevantResource[]>(resources);
   const [selectedResource, setSelectedResource] = useState<RelevantResource | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedResources, setSelectedResources] = useState<RelevantResource[]>([]);
 
   const handleAnalyze = async () => {
     setError(null); // Clear any previous errors
     console.log('Analyzing with:', { selectedText, searchQuery });
     
-    if (!selectedText?.trim()) {
-      console.log('Setting error: No text selected');
-      setError('Du må markere tekst før du kan analysere');
-      // Clear error after 3 seconds
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
-
     if (!searchQuery.trim()) {
       console.log('Setting error: No search query');
-      setError('Skriv inn et spørsmål om den markerte teksten');
+      setError('Tekstfeltet er tomt.');
       // Clear error after 3 seconds
       setTimeout(() => setError(null), 3000);
       return;
@@ -52,7 +47,7 @@ export default function ResourceList({ resources, selectedText }: ResourceListPr
         { role: 'system', content: RESOURCE_ANALYSIS_PROMPT },
         { 
           role: 'user', 
-          content: `Query: ${searchQuery}\n\nSelected Text: ${selectedText}\n\nAvailable Resources:\n${resourcesText}`
+          content: `Query: ${searchQuery}\n\n${selectedText ? `Selected Text: ${selectedText}\n\n` : ''}Available Resources:\n${resourcesText}`
         }
       ];
 
@@ -91,8 +86,25 @@ export default function ResourceList({ resources, selectedText }: ResourceListPr
     }
   };
 
+  const handleCheckboxChange = (resource: RelevantResource) => {
+    const newSelectedResources = selectedResources.find(r => r.id === resource.id)
+      ? selectedResources.filter(r => r.id !== resource.id)
+      : [...selectedResources, resource];
+    
+    setSelectedResources(newSelectedResources);
+    onSelectedResourcesChange(newSelectedResources);
+  };
+
   return (
     <div style={styles.container}>
+      {relevantResources.length !== resources.length && (
+        <button 
+          onClick={() => setRelevantResources(resources)} 
+          style={styles.resetButton}
+        >
+          Vis alle rettskilder
+        </button>
+      )}
       {error && (
         <div style={styles.errorOverlay}>
           <div style={styles.errorMessage}>
@@ -112,16 +124,26 @@ export default function ResourceList({ resources, selectedText }: ResourceListPr
           </div>
         ) : (
           relevantResources.map((resource) => (
-            <div 
-              key={resource.id} 
-              style={styles.resourceCard}
-              onClick={() => setSelectedResource(resource)}
-            >
-              <h3 style={styles.resourceTitle}>
-                {resource.law_name} § {resource.chapter}-{resource.paragraph} - {resource.title}
-              </h3>
-              <div style={styles.resourceDetails}>
-                <p style={styles.preview}>{resource.content.substring(0, 100)}...</p>
+            <div key={resource.id} style={styles.resourceCard}>
+              <div style={styles.resourceHeader}>
+                <input
+                  type="checkbox"
+                  checked={!!selectedResources.find(r => r.id === resource.id)}
+                  onChange={() => handleCheckboxChange(resource)}
+                  style={styles.checkbox}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <div 
+                  style={styles.resourceContent} 
+                  onClick={() => setSelectedResource(resource)}
+                >
+                  <h3 style={styles.resourceTitle}>
+                    {resource.law_name} § {resource.chapter}-{resource.paragraph} - {resource.title}
+                  </h3>
+                  <div style={styles.resourceDetails}>
+                    <p style={styles.preview}>{resource.content.substring(0, 100)}...</p>
+                  </div>
+                </div>
               </div>
             </div>
           ))
@@ -139,7 +161,7 @@ export default function ResourceList({ resources, selectedText }: ResourceListPr
           style={styles.searchInput}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Gjør et semantisk rettskildesøk basert på markert tekst..."
+          placeholder="Gjør et semantisk rettskildesøk med eller uten markert tekst..."
           disabled={isLoading}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !isLoading) {
@@ -282,5 +304,30 @@ const styles: { [key: string]: React.CSSProperties } = {
     textAlign: 'center',
     boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
     whiteSpace: 'nowrap',
+  },
+  resourceHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    paddingTop: '3px',
+  },
+  checkbox: {
+    cursor: 'pointer',
+    marginTop: '6px',
+  },
+  resourceContent: {
+    flex: 1,
+  },
+  resetButton: {
+    position: 'absolute',
+    top: '10px',
+    right: '20px',
+    padding: '6px 12px',
+    backgroundColor: '#f0f0f0',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    zIndex: 10,
   },
 }; 

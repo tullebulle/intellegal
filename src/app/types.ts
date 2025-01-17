@@ -2,6 +2,7 @@
 export interface LegalResource {
   id: string;
   law_name: string;
+  law_abbreviation: string;
   title: string;
   chapter: number;
   paragraph: number;

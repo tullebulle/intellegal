@@ -18,14 +18,14 @@ export default function SelectedTextBox({
   return (
     <div style={styles.container}>
       <div style={styles.textContainer}>
-        {isLoading ? 'Omformulerer...' : <strong>Markert tekst: </strong>}{isLoading ? '' : displayText}
+        {isLoading ? 'Vasker språk med såpe og vann...' : <strong>Markert tekst: </strong>}{isLoading ? '' : displayText}
       </div>
       <button 
         style={styles.button} 
         onClick={onReformulate}
         disabled={isLoading}
       >
-        Omformuler
+        Språkvask
       </button>
     </div>
   );
